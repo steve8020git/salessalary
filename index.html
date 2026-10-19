@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAON | 영업 연봉·12월 정산 시뮬레이터</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#16273c;background:#f2f5fa}*{box-sizing:border-box}
+body{margin:0}.wrap{max-width:1100px;margin:auto;padding:28px 18px 70px}
+.hero{background:linear-gradient(125deg,#0c2642,#174d65);color:white;border-radius:22px;padding:30px}
+.hero small{color:#9cebd9;font-weight:800;letter-spacing:.13em}.hero h1{margin:12px 0 8px;font-size:clamp(25px,3vw,38px)}.hero p{margin:0;color:#d2e4eb;line-height:1.7}
+.card{background:white;border:1px solid #dfe7ef;border-radius:18px;padding:22px;margin-top:18px;box-shadow:0 4px 14px #1d3c6010}
+h2{font-size:19px;margin:0 0 18px}.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+label{display:block;font-size:13px;font-weight:700;color:#445970;margin-bottom:7px}
+input{width:100%;padding:12px 11px;border:1px solid #cbd7e4;border-radius:9px;font-size:18px;color:#11253b;background:#fff}
+input:focus{outline:2px solid #16a6a0;border-color:transparent}.unit{font-size:12px;color:#6c8196;margin-top:5px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.metric{background:#f1f6fa;border-radius:13px;padding:18px}.metric.accent{background:#e5f8f2}.metric small{color:#52677b;font-weight:700}
+.metric strong{display:block;font-size:clamp(20px,2.5vw,29px);margin-top:9px;color:#0e2d4a}.metric.accent strong{color:#007a6c}
+.pill{display:inline-block;border-radius:50px;padding:5px 10px;background:#e6f6f2;color:#087a69;font-size:12px;font-weight:800}
+.note{font-size:13px;color:#5c7186;line-height:1.75;margin-top:13px}.warning{background:#fff7e6;border:1px solid #f1dba9;border-radius:12px;padding:15px;line-height:1.7;color:#725222}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:12px;border-bottom:1px solid #e1e8ef;text-align:right}th:first-child,td:first-child{text-align:left}th{background:#f0f5f9;color:#3d5369}tr.current{background:#e7f8f2;font-weight:800}
+.btn{border:0;background:#113c5a;color:white;border-radius:10px;padding:11px 17px;font-size:14px;cursor:pointer}
+@media(max-width:750px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics{grid-template-columns:1fr 1fr}.hero{padding:22px}}
+@media(max-width:440px){.grid,.metrics{grid-template-columns:1fr}table{font-size:12px}th,td{padding:9px 5px}}
+@media print{.btn{display:none}.card{break-inside:avoid}}
+/* Screenshot-requested highlight colors, scoped to section ③ only */
+.settlement-top .metric:nth-child(1){background:#fff3a8}
+.settlement-top .metric:nth-child(2){background:#dff3ff}
+.settlement-top .metric:nth-child(3){background:#e1f5d8}
+.settlement-bottom .metric:nth-child(1){background:#d3f1d6}
+.settlement-bottom .metric:nth-child(2){background:#e3f7d8}
+.settlement-bottom .metric:nth-child(3){background:#fff3a8}
+.settlement-top .metric strong,.settlement-bottom .metric strong{color:#123652}
+</style></head><body><main class="wrap">
+<header class="hero"><small>RAON · SALES COMPENSATION</small><h1>내 연봉, 12월과 내년 보너스는 얼마일까?</h1><p>기준연봉과 매출목표를 입력하고, 올해 예상 매출실적을 입력하고 계산하기를 누르면 책정연봉·평소 지급액·12월 추가정산액·차년도 초과성과 보너스를 확인할 수 있습니다.</p></header>
+<section class="card"><div class="row"><h2>① 내 기준과 연말 예상 실적 입력</h2><button class="btn" onclick="calc()">계산하기</button></div>
+<div class="grid">
+<div><label for="base">기준연봉</label><input id="base" type="number" min="0" step="100" value="7400"><div class="unit">만원 / 연</div></div>
+<div><label for="target">연간 매출목표</label><input id="target" type="number" min="0" step=".1" value="18"><div class="unit">억원 / 연</div></div>
+<div><label for="prev">전년도 목표달성률</label><input id="prev" type="number" min="0" step="1" value="88"><div class="unit">% · 80% 미만이면 연초 지급률 달라짐</div></div>
+<div><label for="ach">올해 예상 실적</label><input id="ach" type="number" min="0" step=".1" value="20.4"><div class="unit">억원 / 연 · 예: 20.4억원 (목표 18억원 대비 약 113.3%)</div></div>
+</div><p class="note">매출목표 × 4.5%를 목표 실적연봉으로 계산하고, 기준연봉 40%와 목표 실적연봉 60%를 합산합니다. 금액은 세전·만원 기준입니다.</p></section>
+<section class="card"><h2>② 연초 책정연봉과 평소 지급액</h2><div class="metrics">
+<div class="metric"><small>책정연봉 (100% 달성 기준)</small><strong id="book">-</strong></div>
+<div class="metric"><small>연초 확정보상률</small><strong id="startRate">-</strong></div>
+<div class="metric"><small>평소 월 지급액 (1~11월 가정)</small><strong id="monthly">-</strong></div>
+</div><p class="note" id="baseExplanation"></p></section>
+<section class="card"><div class="row"><h2>③ 연말 예상실적에 따른 12월 급여정산 및 추가 보너스</h2><span class="pill" id="zone">-</span></div>
+<div class="metrics settlement-top">
+<div class="metric"><small>당해년 목표 달성률</small><strong id="final">-</strong></div>
+<div class="metric"><small>12월 지급액 (세전)</small><strong id="dec">-</strong></div>
+<div class="metric"><small>당해년 총 지급액 (세전)</small><strong id="thisYear">-</strong></div>
+</div>
+
+<h3 style="margin:24px 0 12px;font-size:17px;color:#123b55">110% 초과달성 시 차년도 추가 보너스</h3>
+<div class="metrics settlement-bottom">
+<div class="metric"><small>차년도 보너스 가산보상률</small><strong id="bonusRate">-</strong></div>
+<div class="metric"><small>차년도 보너스 지급액</small><strong id="bonus">-</strong></div>
+<div class="metric"><small>예상 최종 지급액 (차년도 보너스 포함)</small><strong id="finalRepeat">-</strong></div>
+</div>
+<div class="note" style="border-top:1px solid #e0e8ef;margin-top:22px;padding-top:14px">
+<strong>계산 및 지급 안내</strong>
+<p id="explain"></p><p id="bonusExplain"></p><p id="decExtra"></p>
+<p>• 12월 급여는 연초 확정보상액의 월 기본분과 목표달성률 110%까지의 추가정산액을 합산한 금액입니다.</p>
+<p>• 110% 초과분의 가산보상률은 (당해연도 달성률 − 110%) × 2입니다. 가산보상액은 책정연봉에 해당 비율을 곱하여 산정합니다.</p>
+<p>• 110% 초과분에 대한 가산보상액은 <strong>당해 12월이 아닌 차년도 보너스 지급일에 별도로 지급</strong>합니다.</p>
+<p>• 본 화면의 예상 최종 지급액은 12월까지 지급하는 연간 보상과 차년도에 지급하는 가산보너스의 합계이며, 실제 당해연도 현금 수령액과 다를 수 있습니다.</p>
+<p>• 연말 실적 확정·12월 급여 마감 일정 및 차년도 보너스 지급일은 회사의 확정된 지급규정에 따릅니다. 표시 금액은 세전이며 세금·공제·법정수당·팀 성과급은 제외합니다.</p>
+</div>
+</section>
+<section class="card"><h2>④ 목표달성률별 비교</h2><div style="overflow:auto"><table><thead><tr><th>목표달성률</th><th>최종보상률</th><th>최종 연봉</th><th>12월 추가정산</th><th>12월 총 지급</th><th>차년도 보너스</th></tr></thead><tbody id="rows"></tbody></table></div><p class="note">12월 지급액은 1~11월에 연초 확정보상액의 1/12씩 지급하고, 12월 기본분과 최대 110%까지의 추가정산액을 합산합니다. 110% 초과분에 대한 2배 가산보상은 차년도 보너스로 별도 표시합니다.</p></section>
+<section class="card"><h2>⑤ 차년도 연초 지급률</h2><div class="metrics"><div class="metric"><small>올해 예상 실적 달성률 기준 내년 출발률</small><strong id="nextRate">-</strong></div><div class="metric"><small>내년 책정연봉 동일 가정 시 연초 확정보상액</small><strong id="nextBase">-</strong></div></div><p class="note">내년 실제 책정연봉은 내년의 기준연봉과 매출목표로 다시 산정됩니다.</p></section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(n)+'만원';
+const pct=n=>new Intl.NumberFormat('ko-KR',{maximumFractionDigits:1}).format(n)+'%';
+const val=id=>Math.max(0,Number($(id).value)||0);
+function rate(a){return a<=110?a:110+2*(a-110)}
+function calc(){
+const base=val('base'),target=val('target'),prev=val('prev'),sales=val('ach');
+const ach=target>0?sales/target*100:0;
+const book=base*.4+(target*10000*.045)*.6;
+const start=prev>=80?90:prev, floor=book*start/100, month=floor/12;
+const performance=rate(ach), finalRate=Math.max(start,performance), final=book*finalRate/100;
+const decemberCap=book*Math.min(110,finalRate)/100;
+const extra=Math.max(0,decemberCap-floor), dec=month+extra;
+const bonusRate=Math.max(0,performance-110), bonus=book*bonusRate/100;
+const zone=ach>110?'Bonus Zone':ach>=90?'Target Zone':ach>=80?'Grace Zone':'Performance Adjustment Zone';
+$('book').textContent=fmt(book);$('startRate').textContent=pct(start);$('monthly').textContent=fmt(month);
+$('final').textContent=pct(ach);$('finalRepeat').textContent=fmt(final);$('dec').textContent=fmt(dec);$('thisYear').textContent=fmt(floor+extra);
+$('zone').textContent=zone;
+$('baseExplanation').textContent=`목표 실적연봉 ${fmt(target*10000*.045)} × 60% + 기준연봉 ${fmt(base)} × 40% = 책정연봉 ${fmt(book)}. 전년도 달성률 ${pct(prev)} → 연초 확정보상률 ${pct(start)} → 연초 확정보상액 ${fmt(floor)}.`;
+$('explain').textContent=`올해 예상 실적 ${sales.toLocaleString("ko-KR",{maximumFractionDigits:2})}억원 / 목표달성률 ${pct(ach)} → 최종보상률 ${pct(finalRate)}. 12월에는 110% 달성분까지만 정산하여 월 기본분 ${fmt(month)} + 추가정산 ${fmt(extra)} = ${fmt(dec)}를 지급합니다. 110% 초과 가산분 ${fmt(bonus)}는 차년도 보너스 지급일에 별도 지급합니다.`;
+$('decExtra').textContent=`12월 지급액 ${fmt(dec)}에는 평소 월 지급액 ${fmt(month)}과 12월 추가정산액 ${fmt(extra)}이 포함됩니다. 당해년 총 지급액은 ${fmt(floor+extra)}이며, 차년도 보너스 ${fmt(bonus)}를 합한 예상 최종 지급액은 ${fmt(final)}입니다.`;
+$('bonus').textContent=fmt(bonus);$('bonusRate').textContent=pct(bonusRate);
+$('bonusExplain').textContent=ach>110?`110%를 ${pct(ach-110)}p 초과했으므로 초과분의 2배인 ${pct(bonusRate)}p를 추가 적용합니다. 110% 달성 시 보상액 ${fmt(book*1.1)}에 초과성과 보너스 ${fmt(bonus)}를 더하면 총보상액은 ${fmt(book*performance/100)}입니다. 이 가산보상액은 차년도 보너스 지급일에 별도 지급합니다.`:`110% 초과 달성 시에만 초과 1%p마다 보상률 2%p가 추가됩니다. 현재 예상 달성률에서는 초과성과 가산분이 없습니다.`;
+const next=ach>=80?90:ach;$('nextRate').textContent=pct(next);$('nextBase').textContent=fmt(book*next/100);
+const points=Array.from(new Set([60,70,80,85,90,95,100,105,110,115,120,125,127,130,140,ach])).sort((a,b)=>a-b);
+$('rows').innerHTML=points.map(a=>{const r=Math.max(start,rate(a)),f=book*r/100,e=Math.max(0,book*Math.min(110,r)/100-floor),d=month+e,b=book*Math.max(0,rate(a)-110)/100;return `<tr class="${Math.abs(a-ach)<.001?'current':''}"><td>${pct(a)}${Math.abs(a-ach)<.001?' ◀ 현재':''}</td><td>${pct(r)}</td><td>${fmt(f)}</td><td>${fmt(e)}</td><td>${fmt(d)}</td><td>${fmt(b)}</td></tr>`}).join('');
+}
+function reset(){$('base').value=7400;$('target').value=18;$('prev').value=88;$('ach').value=20.4;calc()}
+// 입력 중에는 결과를 변경하지 않고, '계산하기'를 눌렀을 때만 전체 재계산합니다.
+calc();
+</script></body></html>
